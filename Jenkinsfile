@@ -1,9 +1,10 @@
-pipeline {
+*pipeline {
     agent any
 
     environment {
-        IMAGE  = "ahmed0020"   // À CHANGER
-        EC2_IP = "172.31.35.247"                  // À CHANGER (sans ubuntu@)
+        IMAGE  = "VOTRE_USER_DOCKERHUB/cicd-demo"   // À CHANGER
+        EC2_IP = "IP_PUBLIQUE_EC2"                  // À CHANGER (sans ubuntu@)
+        PYTHON = "C:\\Users\\ahmed\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
     }
 
     stages {
@@ -16,7 +17,7 @@ pipeline {
         stage('Test') {
             steps {
                 bat '''
-                    python -m venv venv
+                    "%PYTHON%" -m venv venv
                     call venv\\Scripts\\activate
                     pip install -r requirements.txt
                     pytest -v
@@ -32,7 +33,7 @@ pipeline {
 
         stage('Push Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub',   // À cHANGER si autre ID
+                withCredentials([usernamePassword(credentialsId: 'dockerhub',   // À CHANGER si autre ID
                         usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
                     bat '''
                         echo %DH_PASS%| docker login -u %DH_USER% --password-stdin
