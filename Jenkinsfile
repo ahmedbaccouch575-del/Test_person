@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE  = "VOTRE_USER_DOCKERHUB/cicd-demo"   // À CHANGER
-        EC2_IP = "IP_PUBLIQUE_EC2"                  // À CHANGER (sans ubuntu@)
+        IMAGE  = "ahmed0020"   // À CHANGER
+        EC2_IP = "172.31.35.247"                  // À CHANGER (sans ubuntu@)
         PYTHON = "C:\\Users\\ahmed\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
     }
 
