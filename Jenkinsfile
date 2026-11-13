@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         IMAGE  = "ahmed0020/cicd-demo"
-        EC2_IP = "13.53.73.77"   // IPv4 publique de l'EC2
+        EC2_IP = "13.53.73.77"   // IPv4 publique de l'EC2 (pas 172.31.x.x)
     }
 
     stages {
@@ -44,7 +44,7 @@ pipeline {
 
         stage('Push Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
                         usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
                     sh '''
                         echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
