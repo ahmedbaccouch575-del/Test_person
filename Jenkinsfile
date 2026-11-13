@@ -7,11 +7,8 @@ pipeline {
     }
 
     environment {
-        // IMPORTANT : pour Docker Hub, le nom doit être  utilisateur/repo
-        IMAGE  = "ahmed0020/cicd-demo"      // À CHANGER (ton user Docker Hub / nom du repo)
-        EC2_IP = "172.31.35.247"                  // À CHANGER : IP PUBLIQUE de l'EC2
-        PYTHON = "C:\\Users\\ahmed\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
-        DOCKER = "wsl docker"               // si Docker Desktop : mets "docker"
+        IMAGE  = "ahmed0020/cicd-demo"
+        EC2_IP = "13.53.73.77"   // IPv4 publique de l'EC2
     }
 
     stages {
@@ -23,9 +20,9 @@ pipeline {
 
         stage('Test') {
             steps {
-                bat '''
-                    "%PYTHON%" -m venv venv
-                    call venv\\Scripts\\activate
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
                     pip install -r requirements.txt
                     pytest -v
                 '''
@@ -34,14 +31,14 @@ pipeline {
 
         stage('Check Docker') {
             steps {
-                bat '%DOCKER% --version'
-                bat '%DOCKER% info --format "{{.ServerVersion}}"'
+                sh 'docker --version'
+                sh 'docker info --format "{{.ServerVersion}}"'
             }
         }
 
         stage('Build Docker image') {
             steps {
-                bat '%DOCKER% build -t %IMAGE%:%BUILD_NUMBER% -t %IMAGE%:latest .'
+                sh 'docker build -t $IMAGE:$BUILD_NUMBER -t $IMAGE:latest .'
             }
         }
 
@@ -49,11 +46,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub',
                         usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-                    bat '''
-                        echo %DH_PASS%| %DOCKER% login -u %DH_USER% --password-stdin
-                        %DOCKER% push %IMAGE%:%BUILD_NUMBER%
-                        %DOCKER% push %IMAGE%:latest
-                        %DOCKER% logout
+                    sh '''
+                        echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                        docker push $IMAGE:$BUILD_NUMBER
+                        docker push $IMAGE:latest
+                        docker logout
                     '''
                 }
             }
@@ -62,10 +59,10 @@ pipeline {
         stage('Deploy AWS') {
             steps {
                 withCredentials([file(credentialsId: 'ec2-key', variable: 'KEY')]) {
-                    bat '''
-                        icacls "%KEY%" /inheritance:r
-                        icacls "%KEY%" /grant:r "%USERNAME%:R"
-                        ssh -o StrictHostKeyChecking=no -i "%KEY%" ubuntu@%EC2_IP% "docker pull %IMAGE%:latest && (docker rm -f cicd-demo || true) && docker run -d --name cicd-demo -p 5000:5000 %IMAGE%:latest"
+                    sh '''
+                        chmod 600 "$KEY"
+                        ssh -o StrictHostKeyChecking=no -i "$KEY" ubuntu@$EC2_IP \
+                          "docker pull $IMAGE:latest && (docker rm -f cicd-demo || true) && docker run -d --name cicd-demo -p 5000:5000 $IMAGE:latest"
                     '''
                 }
             }
@@ -75,7 +72,7 @@ pipeline {
             steps {
                 retry(5) {
                     sleep time: 5, unit: 'SECONDS'
-                    bat 'curl -f http://%EC2_IP%:5000/health'
+                    sh 'curl -f http://$EC2_IP:5000/health'
                 }
             }
         }
